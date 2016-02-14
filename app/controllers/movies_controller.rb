@@ -13,14 +13,20 @@ class MoviesController < ApplicationController
   def index
     @sorted_title = false
     @sorted_date = false
+    @all_ratings = Movie.possible_ratings
+    @checked_ratings = @all_ratings
+    if params[:ratings]
+      @checked_ratings = params[:ratings].keys
+    end
     if params[:sorted_by_title] == 'true'
-      @movies = Movie.all.order("title ASC")
+      @movies = Movie.where("rating IN (?)", @checked_ratings).order("title ASC")
       @sorted_title = true
     elsif params[:sorted_by_date] == 'true'
-      @movies = Movie.all.order("release_date ASC")
+      @movies = Movie.where("rating IN (?)", @checked_ratings).order("release_date ASC")
       @sorted_date = true
     else 
-      @movies = Movie.all
+      @movies = Movie.where("rating IN (?)", @checked_ratings)
+      # @movies = Movie.where('rating = "G" OR rating = "PG"')
     end
   end
 
