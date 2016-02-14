@@ -11,22 +11,44 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @sorted_title = false
-    @sorted_date = false
+    # initialization
     @all_ratings = Movie.possible_ratings
     @checked_ratings = @all_ratings
+    @movies = Movie.all
+    unsorted_movies = @movies
+    
     if params[:ratings]
+      session[:ratings] = params[:ratings]
       @checked_ratings = params[:ratings].keys
+      @movies = Movie.where("rating IN (?)", @checked_ratings)
+      unsorted_movies = @movies
     end
     if params[:sorted_by_title] == 'true'
-      @movies = Movie.where("rating IN (?)", @checked_ratings).order("title ASC")
+      session[:sorted_by_title] = 'true'
+      session[:sorted_by_date] = nil
       @sorted_title = true
+      @movies = unsorted_movies.order("title ASC")
     elsif params[:sorted_by_date] == 'true'
-      @movies = Movie.where("rating IN (?)", @checked_ratings).order("release_date ASC")
+      session[:sorted_by_title] = nil
+      session[:sorted_by_date] = 'true'
       @sorted_date = true
-    else 
-      @movies = Movie.where("rating IN (?)", @checked_ratings)
-      # @movies = Movie.where('rating = "G" OR rating = "PG"')
+      @movies = unsorted_movies.order("release_date ASC")
+    end
+    
+    # If session contains data not in URI, redirect to URI with complete params
+    current_session = {}
+    current_params = {}
+    [:ratings, :sorted_by_title, :sorted_by_date].each do |param|
+      if session[param]
+        current_session[param] = session[param]
+      end
+      if params[param]
+        current_params[param] = params[param]
+      end
+    end
+    if current_session != current_params
+      flash.keep
+      redirect_to movies_path(current_session)
     end
   end
 
